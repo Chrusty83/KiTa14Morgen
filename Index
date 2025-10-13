@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gästeliste & Mitbringsel</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --accent:#6ee7b7; --muted:#94a3b8; --glass: rgba(255,255,255,0.03);
+      --radius:12px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#071022 0%,#081426 60%);color:#e6eef6;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+    .wrap{width:100%;max-width:880px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1{font-size:20px;margin:0}
+    p.lead{margin:6px 0 0;color:var(--muted);font-size:13px}
+
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:var(--radius);padding:18px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+
+    form{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:center}
+    input[type=text]{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit}
+    button{padding:10px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),#34d399);color:#032;cursor:pointer;font-weight:600}
+    button.ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.03)}
+
+    .controls{display:flex;gap:8px;align-items:center;margin-top:12px}
+    .count{margin-left:auto;color:var(--muted);font-size:13px}
+
+    .list{margin-top:18px}
+    .item{display:flex;gap:12px;align-items:center;padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));border:1px solid rgba(255,255,255,0.02)}
+    .meta{flex:1}
+    .name{font-weight:700}
+    .bring{color:var(--muted);font-size:14px;margin-top:4px}
+    .actions{display:flex;gap:8px}
+    .actions button{padding:8px;border-radius:8px;font-size:13px}
+
+    .empty{padding:28px;text-align:center;color:var(--muted)}
+
+    footer{margin-top:12px;color:var(--muted);font-size:13px}
+
+    @media (max-width:640px){form{grid-template-columns:1fr;}
+      .controls{flex-direction:column;align-items:stretch}
+      .count{margin-left:0}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Gästeliste & Mitbringsel</h1>
+        <p class="lead">Trage hier ein, wer kommt und was er/sie zum Fest mitbringt.</p>
+      </div>
+      <div class="count" id="status">0 Einträge</div>
+    </header>
+
+    <section class="card">
+      <form id="entryForm" autocomplete="off">
+        <input type="text" id="nameInput" placeholder="Name (z. B. Maria)" required />
+        <input type="text" id="bringInput" placeholder="Was bringst du mit? (z. B. Kartoffelsalat)" required />
+        <button id="addBtn">Hinzufügen</button>
+      </form>
+
+      <div class="controls">
+        <input id="filter" type="text" placeholder="Suchen (Name oder Mitbringsel)..." style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:var(--glass)" />
+        <button class="ghost" id="exportBtn">Export (CSV)</button>
+        <button class="ghost" id="clearAll">Alle löschen</button>
+      </div>
+
+      <div class="list" id="listContainer" aria-live="polite"></div>
+
+      <footer>
+        Hinweis: Die Liste wird im Browser gespeichert (lokaler Speicher). Wenn du die Daten teilen willst, nutze den Export.
+      </footer>
+    </section>
+  </div>
+
+  <script>
+    const form = document.getElementById('entryForm');
+    const nameInput = document.getElementById('nameInput');
+    const bringInput = document.getElementById('bringInput');
+    const listContainer = document.getElementById('listContainer');
+    const status = document.getElementById('status');
+    const filter = document.getElementById('filter');
+    const exportBtn = document.getElementById('exportBtn');
+    const clearAllBtn = document.getElementById('clearAll');
+
+    let entries = JSON.parse(localStorage.getItem('party_entries') || '[]');
+    let editId = null;
+
+    function save(){
+      localStorage.setItem('party_entries', JSON.stringify(entries));
+      render();
+    }
+
+    function uid(){return Date.now().toString(36) + Math.random().toString(36).slice(2,7)}
+
+    function addEntry(name, bring){
+      entries.push({id: uid(), name: name.trim(), bring: bring.trim(), added: new Date().toISOString()});
+      save();
+    }
+
+    function updateEntry(id, name, bring){
+      const i = entries.findIndex(e=>e.id===id);
+      if(i>-1){entries[i].name = name.trim(); entries[i].bring = bring.trim();}
+      save();
+    }
+
+    function deleteEntry(id){
+      entries = entries.filter(e=>e.id!==id);
+      save();
+    }
+
+    function clearAll(){
+      if(!confirm('Alle Einträge wirklich löschen?')) return;
+      entries = [];
+      save();
+    }
+
+    function render(){
+      const q = filter.value.trim().toLowerCase();
+      const shown = entries.filter(e => !q || e.name.toLowerCase().includes(q) || e.bring.toLowerCase().includes(q));
+
+      status.textContent = `${entries.length} Einträge`;
+
+      if(shown.length === 0){
+        listContainer.innerHTML = '<div class="empty">Noch keine Einträge — sei der Erste!</div>';
+        return;
+      }
+
+      listContainer.innerHTML = '';
+      shown.forEach(e => {
+        const node = document.createElement('div');
+        node.className = 'item';
+        node.innerHTML = `
+          <div class="meta">
+            <div class="name">${escapeHtml(e.name)}</div>
+            <div class="bring">${escapeHtml(e.bring)}</div>
+          </div>
+          <div class="actions">
+            <button class="ghost" data-edit="${e.id}">Bearbeiten</button>
+            <button class="ghost" data-delete="${e.id}">Löschen</button>
+          </div>
+        `;
+        listContainer.appendChild(node);
+      });
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
+    }
+
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const name = nameInput.value.trim();
+      const bring = bringInput.value.trim();
+      if(!name || !bring) return;
+
+      if(editId){
+        updateEntry(editId, name, bring);
+        editId = null;
+        form.querySelector('#addBtn').textContent = 'Hinzufügen';
+      } else {
+        addEntry(name, bring);
+      }
+
+      form.reset();
+      nameInput.focus();
+    });
+
+    listContainer.addEventListener('click', (ev)=>{
+      const edit = ev.target.closest('[data-edit]');
+      const del = ev.target.closest('[data-delete]');
+      if(edit){
+        const id = edit.getAttribute('data-edit');
+        const e = entries.find(x=>x.id===id);
+        if(e){nameInput.value = e.name; bringInput.value = e.bring; editId = id; form.querySelector('#addBtn').textContent = 'Speichern'; nameInput.focus();}
+      }
+      if(del){
+        const id = del.getAttribute('data-delete');
+        if(confirm('Eintrag löschen?')){deleteEntry(id)}
+      }
+    });
+
+    filter.addEventListener('input', render);
+
+    exportBtn.addEventListener('click', ()=>{
+      if(entries.length===0){alert('Keine Einträge zum Exportieren.');return}
+      const rows = [['Name','Mitbringsel','Hinzugefügt am']].concat(entries.map(e=>[e.name,e.bring,new Date(e.added).toLocaleString()]));
+      const csv = rows.map(r => r.map(c => '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+      const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'gaesteliste_mitbringsel.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    clearAllBtn.addEventListener('click', clearAll);
+
+    // initial render
+    render();
+  </script>
+</body>
+</html>
