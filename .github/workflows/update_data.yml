@@ -1,0 +1,29 @@
+name: Update Gästeliste
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [update_guestlist]
+
+jobs:
+  update-json:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Update JSON-Datei
+        run: |
+          echo "$PAYLOAD" > tmp.json
+          mv tmp.json data.json
+
+      - name: Commit & Push Änderungen
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: Gästeliste Bot
+          author_email: bot@example.com
+          message: "Update Gästeliste via Web"
+          add: "data.json"
+    env:
+      PAYLOAD: ${{ github.event.client_payload.json }}
