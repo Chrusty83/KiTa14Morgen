@@ -13,7 +13,7 @@
   </style>
 </head>
 <body>
-  <h1>Gästeliste 2</h1>
+  <h1>Gästeliste</h1>
   <form id="guestForm">
     <input type="text" id="name" placeholder="Name" required>
     <input type="text" id="item" placeholder="Mitbringsel" required>
@@ -26,16 +26,20 @@
     const WORKER_URL = "https://workerbring1.christian-63a.workers.dev/";
 
     async function loadData() {
-      const res = await fetch("https://raw.githubusercontent.com/Chrusty83/KiTa14Morgen/main/data.json");
-      if (!res.ok) return;
-      const data = await res.json();
-      const tbody = document.querySelector("#list tbody");
-      tbody.innerHTML = "";
-      data.forEach(row => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${row.name}</td><td>${row.item}</td>`;
-        tbody.appendChild(tr);
-      });
+      try {
+        const res = await fetch("https://raw.githubusercontent.com/Chrusty83/KiTa14Morgen/main/data.json");
+        if (!res.ok) return;
+        const data = await res.json();
+        const tbody = document.querySelector("#list tbody");
+        tbody.innerHTML = "";
+        data.forEach(row => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${row.name}</td><td>${row.item}</td>`;
+          tbody.appendChild(tr);
+        });
+      } catch (e) {
+        console.error("Fehler beim Laden:", e);
+      }
     }
 
     document.querySelector("#guestForm").addEventListener("submit", async e => {
@@ -44,19 +48,23 @@
       const item = document.getElementById("item").value.trim();
       if (!name || !item) return alert("Bitte alles ausfüllen.");
 
-      const res = await fetch(WORKER_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, item })
-      });
+      try {
+        const res = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, item })
+        });
 
-      if (res.ok) {
-        alert("Gespeichert!");
-        document.getElementById("name").value = "";
-        document.getElementById("item").value = "";
-        loadData();
-      } else {
-        alert("Fehler beim Speichern: " + res.statusText);
+        if (res.ok) {
+          alert("Gespeichert!");
+          document.getElementById("name").value = "";
+          document.getElementById("item").value = "";
+          loadData();
+        } else {
+          alert("Fehler beim Speichern: " + res.statusText);
+        }
+      } catch (err) {
+        alert("Fehler beim Speichern: " + err);
       }
     });
 
