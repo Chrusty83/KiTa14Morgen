@@ -36,7 +36,6 @@ jobs:
           git config user.name "GitHub Action"
           git config user.email "actions@github.com"
           
-          # Prüfen, ob es Änderungen gibt
           if git diff --quiet; then
             echo "Keine Änderungen. Nichts zu committen."
           else
@@ -44,3 +43,4 @@ jobs:
             git commit -m "Add ${{ github.event.client_payload.name }}"
             git push https://x-access-token:${PAT}@github.com/Chrusty83/KiTa14Morgen.git HEAD:main
           fi
+
