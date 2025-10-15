@@ -17,11 +17,7 @@ jobs:
           NAME="${{ github.event.client_payload.name }}"
           ITEM="${{ github.event.client_payload.item }}"
           FILE="data.json"
-          
-          # Datei anlegen, falls sie noch nicht existiert
           [ -f "$FILE" ] || echo "[]" > "$FILE"
-          
-          # Neuer Eintrag hinzufügen
           TMP=$(mktemp)
           jq --arg n "$NAME" --arg i "$ITEM" '. += [{"name":$n,"item":$i}]' "$FILE" > "$TMP"
           mv "$TMP" "$FILE"
