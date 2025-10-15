@@ -12,6 +12,9 @@ jobs:
       # 1️⃣ Checkout mit actions/checkout
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
 
       # 2️⃣ Update oder erstelle data.json
       - name: Update data.json
