@@ -7,6 +7,7 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -16,15 +17,21 @@ jobs:
           NAME="${{ github.event.client_payload.name }}"
           ITEM="${{ github.event.client_payload.item }}"
           FILE="data.json"
+          
+          # Datei anlegen, falls sie noch nicht existiert
           [ -f "$FILE" ] || echo "[]" > "$FILE"
+          
+          # Neuer Eintrag hinzufügen
           TMP=$(mktemp)
           jq --arg n "$NAME" --arg i "$ITEM" '. += [{"name":$n,"item":$i}]' "$FILE" > "$TMP"
           mv "$TMP" "$FILE"
 
       - name: Commit and push
+        env:
+          PAT: ${{ secrets.PAT_FOR_PUSH }}
         run: |
           git config user.name "GitHub Action"
           git config user.email "actions@github.com"
           git add data.json
           git commit -m "Add ${{ github.event.client_payload.name }}"
-          git push
+          git push https://x-access-token:${PAT}@github.com/Chrusty83/KiTa14Morgen.git HEAD:main
