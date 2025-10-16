@@ -5,15 +5,99 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gästeliste zum Fest (Live + Admin + Highlight)</title>
   <style>
-    body { font-family: sans-serif; max-width: 500px; margin: 2rem auto; }
-    input, button { margin: 0.5rem 0; padding: 0.5rem; width: 100%; }
-    ul { list-style-type: none; padding: 0; }
-    li { background: #f4f4f4; margin: 0.3rem 0; padding: 0.5rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
-    .reload, #adminLoginBtn { background: #4caf50; color: white; border: none; border-radius: 6px; cursor: pointer; }
-    .reload:hover, #adminLoginBtn:hover { background: #45a049; }
-    .deleteBtn { background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 0.2rem 0.5rem; }
-    .deleteBtn:hover { background: #d32f2f; }
-    #adminSection { margin-top: 2rem; border-top: 1px solid #ccc; padding-top: 1rem; display: none; }
+    body {
+      font-family: sans-serif;
+      max-width: 500px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      box-sizing: border-box;
+      background: #fafafa;
+    }
+
+    h1, h2 { text-align: center; }
+
+    form#guestForm {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 1.5rem;
+    }
+
+    input, button {
+      margin: 0.5rem 0;
+      padding: 0.7rem;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background: #4caf50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #45a049;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      background: #f4f4f4;
+      margin: 0.3rem 0;
+      padding: 0.5rem;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .deleteBtn {
+      background: #f44336;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.9rem;
+      margin-left: 0.5rem;
+      transition: background 0.3s;
+    }
+    .deleteBtn:hover {
+      background: #d32f2f;
+    }
+
+    #adminSection {
+      margin-top: 2rem;
+      border-top: 1px solid #ccc;
+      padding-top: 1rem;
+      display: none;
+    }
+
+    #adminLogin {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 1.5rem;
+    }
+
+    /* Mobile optimiert */
+    @media (max-width: 480px) {
+      input, button { font-size: 1.1rem; padding: 0.8rem; }
+      li { font-size: 1rem; }
+      .deleteBtn { font-size: 1rem; padding: 0.4rem 0.7rem; }
+    }
   </style>
 </head>
 <body>
@@ -38,7 +122,7 @@
   <!-- Admin-Bereich -->
   <div id="adminSection">
     <h2>Admin-Bereich</h2>
-    <button id="clearListBtn" class="reload">🗑 Alle Einträge löschen</button>
+    <button id="clearListBtn">🗑 Alle Einträge löschen</button>
   </div>
 
   <script>
@@ -46,7 +130,6 @@
     const ADMIN_PASSWORD = "geheim123"; // Passwort ändern
     let lastLoadedCount = 0; // Zähler für neue Einträge
 
-    // 🔹 Gästeliste laden
     async function loadGuestList() {
       const listElement = document.getElementById("guestList");
       listElement.innerHTML = "<li>Wird geladen...</li>";
@@ -65,16 +148,14 @@
           const li = document.createElement("li");
           li.textContent = `${entry.name} bringt ${entry.item}`;
 
-          // Highlight für neue Einträge
           if (index >= lastLoadedCount) {
-            li.style.backgroundColor = "#c8f7c5"; // hellgrün
+            li.style.backgroundColor = "#c8f7c5";
             setTimeout(() => {
               li.style.transition = "background-color 1s";
               li.style.backgroundColor = "#f4f4f4";
             }, 200);
           }
 
-          // Admin-Löschbutton sichtbar nach Login
           if (document.getElementById("adminSection").style.display === "block") {
             const delBtn = document.createElement("button");
             delBtn.textContent = "Löschen";
@@ -94,13 +175,12 @@
           listElement.appendChild(li);
         });
 
-        lastLoadedCount = data.length; // Zähler aktualisieren
+        lastLoadedCount = data.length;
       } catch (err) {
         listElement.innerHTML = `<li>Fehler: ${err.message}</li>`;
       }
     }
 
-    // 🔹 Formular absenden
     document.getElementById("guestForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const name = document.getElementById("name").value.trim();
@@ -121,19 +201,17 @@
       }
     });
 
-    // 🔹 Admin Login
     document.getElementById("adminLoginBtn").addEventListener("click", () => {
       const pwInput = document.getElementById("adminPasswordInput").value;
       if (pwInput === ADMIN_PASSWORD) {
         document.getElementById("adminSection").style.display = "block";
         document.getElementById("adminLogin").style.display = "none";
-        loadGuestList(); // Admin-Löschbuttons sichtbar machen
+        loadGuestList();
       } else {
         alert("Falsches Passwort");
       }
     });
 
-    // 🔹 Admin: Alle Einträge löschen
     document.getElementById("clearListBtn").addEventListener("click", async () => {
       await fetch(WORKER_URL, {
         method: "POST",
@@ -143,7 +221,6 @@
       await loadGuestList();
     });
 
-    // 🔹 Direkt beim Start laden
     loadGuestList();
   </script>
 </body>
