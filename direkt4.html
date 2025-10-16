@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gästeliste zum Fest (Live + Admin)</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 2rem auto; }
+    input, button { margin: 0.5rem 0; padding: 0.5rem; width: 100%; }
+    ul { list-style-type: none; padding: 0; }
+    li { background: #f4f4f4; margin: 0.3rem 0; padding: 0.5rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+    .reload { background: #4caf50; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    .reload:hover { background: #45a049; }
+    .deleteBtn { background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 0.2rem 0.5rem; }
+    .deleteBtn:hover { background: #d32f2f; }
+    #adminSection { margin-top: 2rem; border-top: 1px solid #ccc; padding-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Gästeliste</h1>
+
+  <form id="guestForm">
+    <input type="text" id="name" placeholder="Dein Name" required />
+    <input type="text" id="item" placeholder="Was bringst du mit?" required />
+    <button type="submit">Eintragen</button>
+  </form>
+
+  <button id="reloadBtn" class="reload">🔄 Liste neu laden</button>
+
+  <h2>Bereits eingetragen:</h2>
+  <ul id="guestList"></ul>
+
+  <!-- Admin-Bereich -->
+  <div id="adminSection">
+    <h2>Admin</h2>
+    <input type="password" id="adminPassword" placeholder="Admin-Passwort" />
+    <button id="clearListBtn" class="reload">🗑 Alle Einträge löschen</button>
+  </div>
+
+  <script>
+    const WORKER_URL = "https://workerbring1.christian-63a.workers.dev/";
+    const ADMIN_PASSWORD = "geheim123"; // ändere das Passwort nach Wunsch
+
+    // 🔹 Gästeliste laden
+    async function loadGuestList() {
+      const listElement = document.getElementById("guestList");
+      listElement.innerHTML = "<li>Wird geladen...</li>";
+      try {
+        const response = await fetch(WORKER_URL);
+        const data = await response.json();
+        listElement.innerHTML = "";
+        if (!data || data.length === 0) {
+          listElement.innerHTML = "<li>Noch keine Einträge vorhanden</li>";
+          return;
+        }
+        data.forEach((entry, index) => {
+          const li = document.createElement("li");
+          li.textContent = `${entry.name} bringt ${entry.item}`;
+
+          // 🗑 Optional: einzelne Einträge löschen
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Löschen";
+          delBtn.className = "deleteBtn";
+          delBtn.onclick = async () => {
+            const pw = document.getElementById("adminPassword").value;
+            if (pw !== ADMIN_PASSWORD) { alert("Falsches Passwort"); return; }
+
+            const filtered = data.filter((_, i) => i !== index);
+            await fetch(WORKER_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ replaceList: filtered })
+            });
+            await loadGuestList();
+          };
+          li.appendChild(delBtn);
+
+          listElement.appendChild(li);
+        });
+      } catch (err) {
+        listElement.innerHTML = `<li>Fehler: ${err.message}</li>`;
+      }
+    }
+
+    // 🔹 Formular absenden
+    document.getElementById("guestForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value.trim();
+      const item = document.getElementById("item").value.trim();
+      if (!name || !item) return;
+
+      const response = await fetch(WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, item })
+      });
+
+      if (response.ok) {
+        document.getElementById("guestForm").reset();
+        await loadGuestList();
+      } else {
+        alert("Fehler beim Speichern");
+      }
+    });
+
+    // 🔹 Liste neu laden Button
+    document.getElementById("reloadBtn").addEventListener("click", loadGuestList);
+
+    // 🔹 Admin: Alle Einträge löschen
+    document.getElementById("clearListBtn").addEventListener("click", async () => {
+      const pw = document.getElementById("adminPassword").value;
+      if (pw !== ADMIN_PASSWORD) { alert("Falsches Passwort"); return; }
+
+      await fetch(WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ replaceList: [] })
+      });
+      await loadGuestList();
+    });
+
+    // 🔹 Direkt beim Start laden
+    loadGuestList();
+  </script>
+</body>
+</html>
