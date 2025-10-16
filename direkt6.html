@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gästeliste zum Fest (Live + Admin)</title>
+  <title>Gästeliste zum Fest (Live + Admin + Highlight)</title>
   <style>
     body { font-family: sans-serif; max-width: 500px; margin: 2rem auto; }
     input, button { margin: 0.5rem 0; padding: 0.5rem; width: 100%; }
@@ -46,6 +46,7 @@
   <script>
     const WORKER_URL = "https://workerbring1.christian-63a.workers.dev/";
     const ADMIN_PASSWORD = "geheim123"; // Passwort ändern
+    let lastLoadedCount = 0; // Zähler für neue Einträge
 
     // 🔹 Gästeliste laden
     async function loadGuestList() {
@@ -55,15 +56,27 @@
         const response = await fetch(WORKER_URL);
         const data = await response.json();
         listElement.innerHTML = "";
+
         if (!data || data.length === 0) {
           listElement.innerHTML = "<li>Noch keine Einträge vorhanden</li>";
+          lastLoadedCount = 0;
           return;
         }
+
         data.forEach((entry, index) => {
           const li = document.createElement("li");
           li.textContent = `${entry.name} bringt ${entry.item}`;
 
-          // Admin: einzelnes Löschen, nur sichtbar nach Login
+          // Highlight für neue Einträge
+          if (index >= lastLoadedCount) {
+            li.style.backgroundColor = "#c8f7c5"; // hellgrün
+            setTimeout(() => {
+              li.style.transition = "background-color 1s";
+              li.style.backgroundColor = "#f4f4f4";
+            }, 200);
+          }
+
+          // Admin-Löschbutton sichtbar nach Login
           if (document.getElementById("adminSection").style.display === "block") {
             const delBtn = document.createElement("button");
             delBtn.textContent = "Löschen";
@@ -82,6 +95,8 @@
 
           listElement.appendChild(li);
         });
+
+        lastLoadedCount = data.length; // Zähler aktualisieren
       } catch (err) {
         listElement.innerHTML = `<li>Fehler: ${err.message}</li>`;
       }
