@@ -9,6 +9,8 @@
     input, button { margin: 0.5rem 0; padding: 0.5rem; width: 100%; }
     ul { list-style-type: none; padding: 0; }
     li { background: #f4f4f4; margin: 0.3rem 0; padding: 0.5rem; border-radius: 6px; }
+    .reload { background: #4caf50; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    .reload:hover { background: #45a049; }
   </style>
 </head>
 <body>
@@ -20,11 +22,12 @@
     <button type="submit">Eintragen</button>
   </form>
 
+  <button id="reloadBtn" class="reload">🔄 Liste neu laden</button>
+
   <h2>Bereits eingetragen:</h2>
   <ul id="guestList"></ul>
 
   <script>
-    // URLs anpassen
     const GUESTLIST_URL = "https://raw.githubusercontent.com/Chrusty83/KiTa14Morgen/main/data.json";
     const WORKER_URL = "https://workerbring1.christian-63a.workers.dev/";
 
@@ -33,10 +36,14 @@
       const listElement = document.getElementById("guestList");
       listElement.innerHTML = "<li>Wird geladen...</li>";
       try {
-        const response = await fetch(GUESTLIST_URL + "?cache=" + Date.now()); // Cache-Busting
+        const response = await fetch(GUESTLIST_URL + "?cache=" + Date.now());
         if (!response.ok) throw new Error("Fehler beim Laden der Liste");
         const data = await response.json();
         listElement.innerHTML = "";
+        if (data.length === 0) {
+          listElement.innerHTML = "<li>Noch keine Einträge vorhanden</li>";
+          return;
+        }
         data.forEach(entry => {
           const li = document.createElement("li");
           li.textContent = `${entry.name} bringt ${entry.item}`;
@@ -69,6 +76,11 @@
       }
 
       document.getElementById("guestForm").reset();
+    });
+
+    // 🔄 Manuelles Neuladen per Button
+    document.getElementById("reloadBtn").addEventListener("click", async () => {
+      await loadGuestList();
     });
 
     // 🧠 Liste direkt beim Start laden
