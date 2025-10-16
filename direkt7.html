@@ -25,8 +25,6 @@
     <button type="submit">Eintragen</button>
   </form>
 
-  <button id="reloadBtn" class="reload">🔄 Liste neu laden</button>
-
   <h2>Bereits eingetragen:</h2>
   <ul id="guestList"></ul>
 
@@ -122,9 +120,6 @@
         alert("Fehler beim Speichern");
       }
     });
-
-    // 🔹 Liste neu laden
-    document.getElementById("reloadBtn").addEventListener("click", loadGuestList);
 
     // 🔹 Admin Login
     document.getElementById("adminLoginBtn").addEventListener("click", () => {
