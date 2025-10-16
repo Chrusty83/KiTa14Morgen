@@ -9,11 +9,11 @@
     input, button { margin: 0.5rem 0; padding: 0.5rem; width: 100%; }
     ul { list-style-type: none; padding: 0; }
     li { background: #f4f4f4; margin: 0.3rem 0; padding: 0.5rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
-    .reload { background: #4caf50; color: white; border: none; border-radius: 6px; cursor: pointer; }
-    .reload:hover { background: #45a049; }
+    .reload, #adminLoginBtn { background: #4caf50; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    .reload:hover, #adminLoginBtn:hover { background: #45a049; }
     .deleteBtn { background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 0.2rem 0.5rem; }
     .deleteBtn:hover { background: #d32f2f; }
-    #adminSection { margin-top: 2rem; border-top: 1px solid #ccc; padding-top: 1rem; }
+    #adminSection { margin-top: 2rem; border-top: 1px solid #ccc; padding-top: 1rem; display: none; }
   </style>
 </head>
 <body>
@@ -30,16 +30,22 @@
   <h2>Bereits eingetragen:</h2>
   <ul id="guestList"></ul>
 
+  <!-- Admin-Login -->
+  <div id="adminLogin">
+    <h2>Admin Login</h2>
+    <input type="password" id="adminPasswordInput" placeholder="Admin-Passwort" />
+    <button id="adminLoginBtn">Login</button>
+  </div>
+
   <!-- Admin-Bereich -->
   <div id="adminSection">
-    <h2>Admin</h2>
-    <input type="password" id="adminPassword" placeholder="Admin-Passwort" />
+    <h2>Admin-Bereich</h2>
     <button id="clearListBtn" class="reload">🗑 Alle Einträge löschen</button>
   </div>
 
   <script>
     const WORKER_URL = "https://workerbring1.christian-63a.workers.dev/";
-    const ADMIN_PASSWORD = "geheim123"; // ändere das Passwort nach Wunsch
+    const ADMIN_PASSWORD = "geheim123"; // Passwort ändern
 
     // 🔹 Gästeliste laden
     async function loadGuestList() {
@@ -57,23 +63,22 @@
           const li = document.createElement("li");
           li.textContent = `${entry.name} bringt ${entry.item}`;
 
-          // 🗑 Optional: einzelne Einträge löschen
-          const delBtn = document.createElement("button");
-          delBtn.textContent = "Löschen";
-          delBtn.className = "deleteBtn";
-          delBtn.onclick = async () => {
-            const pw = document.getElementById("adminPassword").value;
-            if (pw !== ADMIN_PASSWORD) { alert("Falsches Passwort"); return; }
-
-            const filtered = data.filter((_, i) => i !== index);
-            await fetch(WORKER_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ replaceList: filtered })
-            });
-            await loadGuestList();
-          };
-          li.appendChild(delBtn);
+          // Admin: einzelnes Löschen, nur sichtbar nach Login
+          if (document.getElementById("adminSection").style.display === "block") {
+            const delBtn = document.createElement("button");
+            delBtn.textContent = "Löschen";
+            delBtn.className = "deleteBtn";
+            delBtn.onclick = async () => {
+              const filtered = data.filter((_, i) => i !== index);
+              await fetch(WORKER_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ replaceList: filtered })
+              });
+              await loadGuestList();
+            };
+            li.appendChild(delBtn);
+          }
 
           listElement.appendChild(li);
         });
@@ -103,14 +108,23 @@
       }
     });
 
-    // 🔹 Liste neu laden Button
+    // 🔹 Liste neu laden
     document.getElementById("reloadBtn").addEventListener("click", loadGuestList);
+
+    // 🔹 Admin Login
+    document.getElementById("adminLoginBtn").addEventListener("click", () => {
+      const pwInput = document.getElementById("adminPasswordInput").value;
+      if (pwInput === ADMIN_PASSWORD) {
+        document.getElementById("adminSection").style.display = "block";
+        document.getElementById("adminLogin").style.display = "none";
+        loadGuestList(); // Admin-Löschbuttons sichtbar machen
+      } else {
+        alert("Falsches Passwort");
+      }
+    });
 
     // 🔹 Admin: Alle Einträge löschen
     document.getElementById("clearListBtn").addEventListener("click", async () => {
-      const pw = document.getElementById("adminPassword").value;
-      if (pw !== ADMIN_PASSWORD) { alert("Falsches Passwort"); return; }
-
       await fetch(WORKER_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
