@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gästeliste zum Fest</title>
+  <title>Gästeliste zum Fest (Live)</title>
   <style>
     body { font-family: sans-serif; max-width: 500px; margin: 2rem auto; }
     input, button { margin: 0.5rem 0; padding: 0.5rem; width: 100%; }
@@ -28,19 +28,17 @@
   <ul id="guestList"></ul>
 
   <script>
-    const GUESTLIST_URL = "https://raw.githubusercontent.com/Chrusty83/KiTa14Morgen/main/data.json";
     const WORKER_URL = "https://workerbring1.christian-63a.workers.dev/";
 
-    // 🧾 Gästeliste laden
+    // 🔹 Gästeliste laden
     async function loadGuestList() {
       const listElement = document.getElementById("guestList");
       listElement.innerHTML = "<li>Wird geladen...</li>";
       try {
-        const response = await fetch(GUESTLIST_URL + "?cache=" + Date.now());
-        if (!response.ok) throw new Error("Fehler beim Laden der Liste");
+        const response = await fetch(WORKER_URL);
         const data = await response.json();
         listElement.innerHTML = "";
-        if (data.length === 0) {
+        if (!data || data.length === 0) {
           listElement.innerHTML = "<li>Noch keine Einträge vorhanden</li>";
           return;
         }
@@ -54,36 +52,31 @@
       }
     }
 
-    // ✉️ Formular absenden
+    // 🔹 Formular absenden
     document.getElementById("guestForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const name = document.getElementById("name").value.trim();
       const item = document.getElementById("item").value.trim();
-
       if (!name || !item) return;
 
-      const response = await fetch(WORKER_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, item })
-      });
-
-      if (response.ok) {
-        alert("Eintrag gespeichert!");
-        await loadGuestList(); // 🔄 aktualisiere Liste
-      } else {
-        alert("Fehler beim Speichern: " + response.statusText);
+      try {
+        const response = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, item })
+        });
+        if (!response.ok) throw new Error(response.statusText);
+        document.getElementById("guestForm").reset();
+        await loadGuestList(); // 🔄 sofort aktualisieren
+      } catch (err) {
+        alert("Fehler beim Speichern: " + err.message);
       }
-
-      document.getElementById("guestForm").reset();
     });
 
-    // 🔄 Manuelles Neuladen per Button
-    document.getElementById("reloadBtn").addEventListener("click", async () => {
-      await loadGuestList();
-    });
+    // 🔹 Button zum manuellen Neuladen
+    document.getElementById("reloadBtn").addEventListener("click", loadGuestList);
 
-    // 🧠 Liste direkt beim Start laden
+    // 🔹 Direkt beim Start laden
     loadGuestList();
   </script>
 </body>
