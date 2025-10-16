@@ -246,5 +246,19 @@
     loadGuestList();
   </script>
 
+
+<audio id="bgMusic" src="https://raw.githubusercontent.com/Chrusty83/KiTa14Morgen/main/Lichterkinder%20-%20Lichterkinder.mp3" autoplay loop></audio>
+
+<script>
+  // Audio starten (manche Browser benötigen Interaktion, daher fallback)
+  const audio = document.getElementById("bgMusic");
+  audio.volume = 0.3; // Lautstärke auf 30%
+  document.body.addEventListener("click", () => {
+    if (audio.paused) audio.play();
+  });
+</script>
+
+
+  
 </body>
 </html>
